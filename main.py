@@ -55,11 +55,29 @@ def fetch_port_details(ip, port_index):
         for li in div.find_all("li"):
             text = li.get_text(strip=True)
             lines.append(text)
+            print(lines)
         return lines if lines else ["Нет данных"]
     except Exception as e:
         return [f"Ошибка: {e}"]
 
 def show_ui():
+    def on_universe_edit(index, ip, port):
+        def save(event):
+            new_val = universe_entry.get()
+            listbox.delete(index)
+            listbox.insert(index, f"   Universe: {new_val} (кликните для редактирования)")
+            if ip not in pending_changes:
+                pending_changes[ip] = {}
+            pending_changes[ip][str(port)] = new_val
+            print("Изменения:", pending_changes)
+
+        listbox.delete(index)
+        universe_entry = tk.Entry(root)
+        universe_entry.insert(0, "1")
+        universe_entry.bind("<Return>", save)
+        listbox.insert(index, "")
+        listbox.window_create(index, window=universe_entry)
+
     def on_scan():
         btn_scan.config(state="disabled")
         listbox.delete(0, tk.END)
@@ -96,7 +114,35 @@ def show_ui():
                 port_number = int(item_text.split(" ")[-1])
                 details = fetch_port_details(ip, port_number)
                 for i, line in enumerate(details):
-                    listbox.insert(selected_index + 1 + i, f"   {line}")
+                    if line.lower().startswith("universe"):
+                        universe_value = line.split(":")[-1].strip()
+                        editable_index = selected_index + 1 + i
+                        listbox.insert(editable_index, f"   Universe: {universe_value} (нажмите для редактирования)")
+
+                        def universe_click_handler(event, index=editable_index, ip=ip, port=port_number, current_val=universe_value):
+                            for widget in entry_frame.winfo_children():
+                                widget.destroy()
+                            tk.Label(entry_frame, text=f"{ip} — Port {port} — Universe:").pack(side=tk.LEFT)
+                            var = tk.StringVar(value=current_val)
+                            entry = tk.Entry(entry_frame, textvariable=var)
+                            entry.pack(side=tk.LEFT)
+
+                            def save_value(evt=None):
+                                new_val = var.get()
+                                listbox.delete(index)
+                                listbox.insert(index, f"   Universe: {new_val} (нажмите для редактирования)")
+                                if ip not in pending_changes:
+                                    pending_changes[ip] = {}
+                                pending_changes[ip][str(port)] = new_val
+                                print("Изменения:", pending_changes)
+                                for widget in entry_frame.winfo_children():
+                                    widget.destroy()
+
+                            entry.bind("<Return>", save_value)
+
+                        listbox.bind("<Button-1>", lambda event, idx=editable_index: universe_click_handler(event))
+                    else:
+                        listbox.insert(selected_index + 1 + i, f"   {line}")
         else:  # это IP
             # Флаг переключения для IP
             already_expanded = False
@@ -123,7 +169,7 @@ def show_ui():
     root.title("ГейТы")
 
     tk.Label(root, text="Подсеть").pack()
-    selected_subnet = tk.StringVar(value="192.168.0.0/24")
+    selected_subnet = tk.StringVar(value="10.1.3.0/24")
     subnet_entry = tk.Entry(root, textvariable=selected_subnet, width=30)
     subnet_entry.pack()
 
@@ -134,6 +180,12 @@ def show_ui():
     listbox.pack()
     listbox.bind("<Double-Button-1>", on_double_click)
     listbox.bind("<<ListboxSelect>>", on_select)
+
+    entry_frame = tk.Frame(root)
+    entry_frame.pack()
+
+    global pending_changes
+    pending_changes = {}
 
     root.mainloop()
 
