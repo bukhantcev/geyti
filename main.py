@@ -6,25 +6,11 @@ import threading
 import tkinter as tk
 from tkinter import messagebox
 import subprocess
-import netifaces
 from concurrent.futures import ThreadPoolExecutor
 
 # Получение всех IP подсетей с маской /24
 def get_local_subnets():
-    subnets = []
-    for iface in netifaces.interfaces():
-        ifaddresses = netifaces.ifaddresses(iface)
-        if netifaces.AF_INET in ifaddresses:
-            for link in ifaddresses[netifaces.AF_INET]:
-                ip = link.get('addr')
-                netmask = link.get('netmask')
-                if ip and netmask:
-                    try:
-                        network = ipaddress.IPv4Network(f"{ip}/24", strict=False)
-                        subnets.append(str(network))
-                    except Exception:
-                        pass
-    return subnets
+    return []  # Получение подсетей отключено, ввод будет вручную
 
 def is_http_open(ip, port=80, timeout=0.5):
     try:
@@ -137,14 +123,9 @@ def show_ui():
     root.title("ГейТы")
 
     tk.Label(root, text="Подсеть").pack()
-    subnets = get_local_subnets()
-    selected_subnet = tk.StringVar()
-    if subnets:
-        selected_subnet.set(subnets[0])
-    else:
-        selected_subnet.set("0.0.0.0/8")
-    subnet_menu = tk.OptionMenu(root, selected_subnet, *subnets)
-    subnet_menu.pack()
+    selected_subnet = tk.StringVar(value="192.168.0.0/24")
+    subnet_entry = tk.Entry(root, textvariable=selected_subnet, width=30)
+    subnet_entry.pack()
 
     btn_scan = tk.Button(root, text="Сканировать", command=on_scan)
     btn_scan.pack(pady=5)
