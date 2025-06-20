@@ -8,6 +8,7 @@ from tkinter import messagebox
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 
+
 # Получение всех IP подсетей с маской /24
 def get_local_subnets():
     return []  # Получение подсетей отключено, ввод будет вручную
@@ -55,7 +56,6 @@ def fetch_port_details(ip, port_index):
         for li in div.find_all("li"):
             text = li.get_text(strip=True)
             lines.append(text)
-            print(lines)
         return lines if lines else ["Нет данных"]
     except Exception as e:
         return [f"Ошибка: {e}"]
@@ -70,6 +70,8 @@ def show_ui():
                 pending_changes[ip] = {}
             pending_changes[ip][str(port)] = new_val
             print("Изменения:", pending_changes)
+            btn_apply.pack()
+            btn_cancel.pack()
 
         listbox.delete(index)
         universe_entry = tk.Entry(root)
@@ -134,7 +136,8 @@ def show_ui():
                                 if ip not in pending_changes:
                                     pending_changes[ip] = {}
                                 pending_changes[ip][str(port)] = new_val
-                                print("Изменения:", pending_changes)
+                                btn_apply.pack()
+                                btn_cancel.pack()
                                 for widget in entry_frame.winfo_children():
                                     widget.destroy()
 
@@ -186,6 +189,25 @@ def show_ui():
 
     global pending_changes
     pending_changes = {}
+
+    def apply_pending():
+        from test import apply_config
+        for ip, ports in pending_changes.items():
+            apply_config(ip, ports)
+            print(ip, ports)
+        pending_changes.clear()
+        btn_apply.pack_forget()
+        btn_cancel.pack_forget()
+
+    def cancel_pending():
+        pending_changes.clear()
+        btn_apply.pack_forget()
+        btn_cancel.pack_forget()
+
+    btn_apply = tk.Button(root, text="Применить", command=apply_pending)
+    btn_cancel = tk.Button(root, text="Отменить", command=cancel_pending)
+    btn_apply.pack_forget()
+    btn_cancel.pack_forget()
 
     root.mainloop()
 
